@@ -1,0 +1,46 @@
+name: Build desktop apps
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14
+            arch: x64
+            builder_args: --mac --x64
+          - os: macos-14
+            arch: arm64
+            builder_args: --mac --arm64
+          - os: windows-2022
+            arch: x64
+            builder_args: --win --x64
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --arch=${{ matrix.arch }}
+      - run: npm test
+      - run: npm run build:web
+      - run: npx electron-builder ${{ matrix.builder_args }}
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Quick-Cut-${{ runner.os }}-${{ matrix.arch }}
+          path: |
+            release/*.dmg
+            release/*.zip
+            release/*.exe
+          if-no-files-found: error
