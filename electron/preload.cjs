@@ -1,6 +1,9 @@
 const { contextBridge, ipcRenderer, webUtils } = require('electron')
+const initialTheme = ipcRenderer.sendSync('app:get-theme')
 
 contextBridge.exposeInMainWorld('frameCut', {
+  initialTheme,
+  setTheme: (theme) => ipcRenderer.invoke('app:set-theme', theme),
   selectVideo: () => ipcRenderer.invoke('video:select'),
   getPathForFile: (file) => webUtils.getPathForFile(file),
   getMetadata: (filePath) => ipcRenderer.invoke('video:metadata', filePath),

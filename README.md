@@ -9,15 +9,16 @@
 
 请前往 [GitHub Releases](https://github.com/maopai/quick-cut/releases) 下载当前版本：
 
-- macOS Apple Silicon：`Quick-Cut-1.4.0-macOS-arm64.dmg` 或 `.zip`
-- macOS Intel：`Quick-Cut-1.4.0-macOS-x64.dmg` 或 `.zip`
-- Windows 64 位：`Quick-Cut-1.4.0-Windows-x64-Setup.exe` 为安装版，`Quick-Cut-1.4.0-Windows-x64-Portable.exe` 为免安装版
+- macOS Apple Silicon：`Quick-Cut-1.4.2-macOS-arm64.dmg` 或 `.zip`
+- macOS Intel：`Quick-Cut-1.4.2-macOS-x64.dmg` 或 `.zip`
+- Windows 64 位：`Quick-Cut-1.4.2-Windows-x64-Setup.exe` 为安装版，`Quick-Cut-1.4.2-Windows-x64-Portable.exe` 为免安装版
 
 当前版本未进行 Apple Developer ID 或 Windows 代码签名，首次运行时系统可能显示“开发者未验证”或 SmartScreen 提示。
 
 ## 已实现功能
 
 - Windows 与 macOS 桌面应用（Electron + React）
+- 支持黑色与白色主题切换，应用内容和系统窗口标题栏保持一致，并记住上次选择
 - 通过文件选择器或拖放到窗口任意位置读取 MP4、MOV、MKV、AVI、WebM、M4V、MTS、M2TS 等常见视频文件
 - 剪辑前输入片段数量，之后仍可增减、删除和上下调整顺序
 - 时间采用“时 / 分 / 秒”三段式输入，单个数字自动补零；分钟和秒限制为 `00–59`
@@ -90,9 +91,11 @@ npm run build:win:x64
 electron/
   main.cjs       Electron 窗口、文件选择和 IPC
   preload.cjs    安全的渲染层接口
+  theme.cjs      原生窗口主题和偏好持久化
   ffmpeg.cjs     元数据、帧提取、裁切合并和进度
 src/
   App.jsx        桌面界面和交互
+  theme.js       页面主题切换和本地偏好
   time.js        HH:MM:SS 解析与校验
   styles.css     响应式视觉样式
 ```

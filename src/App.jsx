@@ -13,6 +13,7 @@ import {
   Gauge,
   Image as ImageIcon,
   LoaderCircle,
+  Moon,
   MonitorUp,
   Plus,
   RefreshCw,
@@ -22,6 +23,7 @@ import {
   ShieldCheck,
   SlidersHorizontal,
   Sparkles,
+  Sun,
   Trash2,
   Upload,
   Video,
@@ -29,6 +31,7 @@ import {
   Zap,
 } from 'lucide-react'
 import { formatTime, getTimeParts, normalizeTimePart, parseTime, replaceTimePart, segmentDuration, validateSegment } from './time'
+import { applyDocumentTheme, storeTheme } from './theme'
 
 const makeId = () => `${Date.now()}-${Math.random().toString(16).slice(2)}`
 const blankSegment = () => ({ id: makeId(), start: '', end: '', startFrame: null, endFrame: null, loading: '' })
@@ -320,8 +323,9 @@ function OutputSettings({ metadata, output, onNameChange, onChooseDirectory }) {
   )
 }
 
-export default function App() {
+export default function App({ initialTheme = 'dark' }) {
   const api = window.frameCut
+  const [theme, setTheme] = useState(initialTheme)
   const [metadata, setMetadata] = useState(demoMode ? demoMetadata : null)
   const [segments, setSegments] = useState(demoMode ? demoSegments : [blankSegment(), blankSegment(), blankSegment()])
   const [desiredCount, setDesiredCount] = useState(3)
@@ -340,6 +344,12 @@ export default function App() {
   const totalDuration = useMemo(() => segments.reduce((sum, item) => sum + segmentDuration(item), 0), [segments])
   const errors = useMemo(() => metadata ? segments.map((item) => validateSegment(item, metadata.duration)) : [], [segments, metadata])
   const isReady = Boolean(metadata && output.directory && output.fileName.trim() && segments.length && errors.every((error) => !error))
+
+  useEffect(() => {
+    const nextTheme = applyDocumentTheme(storeTheme(theme))
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', nextTheme === 'light' ? '#f5f7fa' : '#090c10')
+    Promise.resolve(api?.setTheme?.(nextTheme)).catch(() => {})
+  }, [api, theme])
 
   function notify(message, tone = 'success') {
     window.clearTimeout(toastTimer.current)
@@ -546,7 +556,19 @@ export default function App() {
           <div><strong>快速剪辑</strong><span>QUICK CUT</span></div>
         </div>
         <div className="header-title">快速视频片段剪辑</div>
-        <div className="local-badge"><span />完全本地处理</div>
+        <div className="header-actions">
+          <div className="local-badge"><span />完全本地处理</div>
+          <button
+            className="theme-toggle"
+            type="button"
+            onClick={() => setTheme((current) => current === 'dark' ? 'light' : 'dark')}
+            aria-label={theme === 'dark' ? '切换到浅色主题' : '切换到深色主题'}
+            title={theme === 'dark' ? '切换到浅色主题' : '切换到深色主题'}
+          >
+            {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+            <span>{theme === 'dark' ? '浅色' : '深色'}</span>
+          </button>
+        </div>
       </header>
 
       <main>

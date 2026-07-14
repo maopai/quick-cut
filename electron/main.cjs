@@ -1,9 +1,41 @@
-const { app, BrowserWindow, dialog, ipcMain, shell } = require('electron')
+const { app, BrowserWindow, dialog, ipcMain, nativeTheme, shell } = require('electron')
 const path = require('node:path')
 const fs = require('node:fs')
 const { getMetadata, extractFrame, getEncoderCapabilities, exportVideo, cancelExport } = require('./ffmpeg.cjs')
+const {
+  getThemePalette,
+  getWindowChromeOptions,
+  normalizeTheme,
+  readThemePreference,
+  writeThemePreference,
+} = require('./theme.cjs')
 
 let mainWindow
+let activeTheme = 'dark'
+
+function getThemePreferencePath() {
+  return path.join(app.getPath('userData'), 'theme.json')
+}
+
+function applyTheme(theme, { persist = false } = {}) {
+  activeTheme = normalizeTheme(theme)
+  const palette = getThemePalette(activeTheme)
+  nativeTheme.themeSource = activeTheme
+
+  if (persist) writeThemePreference(getThemePreferencePath(), activeTheme)
+
+  for (const window of BrowserWindow.getAllWindows()) {
+    window.setBackgroundColor(palette.background)
+    if (process.platform === 'win32') {
+      window.setTitleBarOverlay({
+        color: palette.background,
+        symbolColor: palette.foreground,
+      })
+    }
+  }
+
+  return activeTheme
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -12,8 +44,7 @@ function createWindow() {
     minWidth: 1040,
     minHeight: 700,
     title: '快速剪辑',
-    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
-    backgroundColor: '#0a0d12',
+    ...getWindowChromeOptions(process.platform, activeTheme),
     show: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
@@ -22,6 +53,8 @@ function createWindow() {
       sandbox: true,
     },
   })
+
+  if (process.platform === 'win32') mainWindow.removeMenu()
 
   mainWindow.once('ready-to-show', () => mainWindow.show())
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
@@ -37,6 +70,8 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  activeTheme = readThemePreference(getThemePreferencePath())
+  applyTheme(activeTheme)
   createWindow()
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
@@ -123,3 +158,7 @@ ipcMain.handle('video:export', async (event, payload) => {
 })
 
 ipcMain.handle('video:cancel', () => cancelExport())
+ipcMain.on('app:get-theme', (event) => {
+  event.returnValue = activeTheme
+})
+ipcMain.handle('app:set-theme', (_event, theme) => applyTheme(theme, { persist: true }))
