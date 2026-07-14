@@ -7,6 +7,7 @@ const {
   buildFastExportArgs,
   createConcatFile,
   getEncoderCandidates,
+  getDisplayAspectRatio,
 } = require('./ffmpeg.cjs')
 
 const metadata = {
@@ -50,8 +51,13 @@ test('extracts preview frames inside 1080p bounds without upscaling', () => {
   assert.equal(args[args.indexOf('-ss') + 1], '3.250')
   assert.equal(
     args[args.indexOf('-vf') + 1],
-    "scale=w='min(iw,1920)':h='min(ih,1080)':force_original_aspect_ratio=decrease:force_divisible_by=2",
+    "scale=w='max(2,trunc(if(gte(sar,1),iw,iw*sar)/2)*2)':h='max(2,trunc(if(gte(sar,1),ih/sar,ih)/2)*2)':eval=init,setsar=1,scale=w='min(iw,1920)':h='min(ih,1080)':force_original_aspect_ratio=decrease:force_divisible_by=2",
   )
+})
+
+test('uses display aspect ratio instead of coded pixel dimensions', () => {
+  assert.equal(getDisplayAspectRatio({ width: 1440, height: 360, sample_aspect_ratio: '4:9' }), 16 / 9)
+  assert.equal(getDisplayAspectRatio({ width: 1920, height: 1080, display_aspect_ratio: '16:9', side_data_list: [{ rotation: -90 }] }), 9 / 16)
 })
 
 test('uses an explicit custom video bitrate', () => {

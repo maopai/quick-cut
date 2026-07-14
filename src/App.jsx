@@ -629,7 +629,7 @@ export default function App() {
                 index={index}
                 count={segments.length}
                 duration={metadata?.duration}
-                aspectRatio={metadata?.video.width && metadata?.video.height ? metadata.video.width / metadata.video.height : 16 / 9}
+                aspectRatio={metadata?.video.displayAspectRatio || (metadata?.video.width && metadata?.video.height ? metadata.video.width / metadata.video.height : 16 / 9)}
                 onChange={changeSegment}
                 onRemove={removeSegment}
                 onMove={moveSegment}

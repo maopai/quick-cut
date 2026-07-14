@@ -41,6 +41,30 @@ function run(binary, args, { collectStdout = true, onStdout } = {}) {
   })
 }
 
+function parseAspectRatio(value) {
+  if (typeof value !== 'string' || !value || value === 'N/A') return 0
+  const [numerator, denominator] = value.split(/[:/]/).map(Number)
+  if (!Number.isFinite(numerator) || !Number.isFinite(denominator) || numerator <= 0 || denominator <= 0) return 0
+  return numerator / denominator
+}
+
+function getVideoRotation(video) {
+  const sideDataRotation = video.side_data_list?.find((item) => Number.isFinite(Number(item.rotation)))?.rotation
+  const rotation = Number(sideDataRotation ?? video.tags?.rotate ?? 0)
+  return Number.isFinite(rotation) ? rotation : 0
+}
+
+function getDisplayAspectRatio(video) {
+  const codedAspectRatio = Number(video.width) > 0 && Number(video.height) > 0
+    ? Number(video.width) / Number(video.height)
+    : 16 / 9
+  const sampleAspectRatio = parseAspectRatio(video.sample_aspect_ratio) || 1
+  let displayAspectRatio = parseAspectRatio(video.display_aspect_ratio) || codedAspectRatio * sampleAspectRatio
+  const rotation = getVideoRotation(video)
+  if (Math.abs(Math.round(rotation / 90)) % 2 === 1) displayAspectRatio = 1 / displayAspectRatio
+  return Number.isFinite(displayAspectRatio) && displayAspectRatio > 0 ? displayAspectRatio : codedAspectRatio
+}
+
 async function getMetadata(filePath) {
   const result = await run(ffprobePath, [
     '-v', 'error',
@@ -75,6 +99,9 @@ async function getMetadata(filePath) {
       fps: parseRate(video.avg_frame_rate || video.r_frame_rate),
       bitRate: Number(video.bit_rate || data.format.bit_rate || 0),
       pixelFormat: video.pix_fmt,
+      sampleAspectRatio: video.sample_aspect_ratio || '1:1',
+      displayAspectRatio: getDisplayAspectRatio(video),
+      rotation: getVideoRotation(video),
     },
     audio: audio ? {
       codec: audio.codec_name,
@@ -92,7 +119,7 @@ function buildFrameExtractionArgs(filePath, seconds) {
     '-ss', Math.max(0, Number(seconds)).toFixed(3),
     '-i', filePath,
     '-frames:v', '1',
-    '-vf', "scale=w='min(iw,1920)':h='min(ih,1080)':force_original_aspect_ratio=decrease:force_divisible_by=2",
+    '-vf', "scale=w='max(2,trunc(if(gte(sar,1),iw,iw*sar)/2)*2)':h='max(2,trunc(if(gte(sar,1),ih/sar,ih)/2)*2)':eval=init,setsar=1,scale=w='min(iw,1920)':h='min(ih,1080)':force_original_aspect_ratio=decrease:force_divisible_by=2",
     '-f', 'image2pipe',
     '-vcodec', 'mjpeg',
     'pipe:1',
@@ -489,6 +516,7 @@ module.exports = {
   getMetadata,
   extractFrame,
   buildFrameExtractionArgs,
+  getDisplayAspectRatio,
   getEncoderCapabilities,
   getEncoderCandidates,
   exportVideo,
