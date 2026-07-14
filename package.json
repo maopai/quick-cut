@@ -75,7 +75,7 @@
       "node_modules/@ffprobe-installer/**/*"
     ],
     "mac": {
-      "artifactName": "Quick-Cut-${version}-${arch}.${ext}",
+      "artifactName": "Quick-Cut-${version}-macOS-${arch}.${ext}",
       "category": "public.app-category.video",
       "icon": "build/icons/icon.icns",
       "target": [
@@ -101,13 +101,13 @@
       ]
     },
     "nsis": {
-      "artifactName": "Quick-Cut-Setup-${version}-${arch}.${ext}",
+      "artifactName": "Quick-Cut-${version}-Windows-${arch}-Setup.${ext}",
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true
     },
     "portable": {
-      "artifactName": "Quick-Cut-Portable-${version}-${arch}.${ext}"
+      "artifactName": "Quick-Cut-${version}-Windows-${arch}-Portable.${ext}"
     }
   }
 }

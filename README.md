@@ -9,9 +9,9 @@
 
 请前往 [GitHub Releases](https://github.com/maopai/quick-cut/releases) 下载当前版本：
 
-- macOS Apple Silicon：`Quick-Cut-1.4.0-arm64.dmg` 或 `.zip`
-- macOS Intel：`Quick-Cut-1.4.0-x64.dmg` 或 `.zip`
-- Windows 64 位：`Quick-Cut-Setup-1.4.0-x64.exe` 为安装版，`Quick-Cut-Portable-1.4.0-x64.exe` 为免安装版
+- macOS Apple Silicon：`Quick-Cut-1.4.0-macOS-arm64.dmg` 或 `.zip`
+- macOS Intel：`Quick-Cut-1.4.0-macOS-x64.dmg` 或 `.zip`
+- Windows 64 位：`Quick-Cut-1.4.0-Windows-x64-Setup.exe` 为安装版，`Quick-Cut-1.4.0-Windows-x64-Portable.exe` 为免安装版
 
 当前版本未进行 Apple Developer ID 或 Windows 代码签名，首次运行时系统可能显示“开发者未验证”或 SmartScreen 提示。
 
