@@ -28,21 +28,23 @@ export function getTimeParts(value) {
 
 export function replaceTimePart(value, index, nextPart) {
   const parts = getTimeParts(value)
-  parts[index] = String(nextPart ?? '').replace(/\D/g, '').slice(0, index === 0 ? 3 : 2)
+  parts[index] = String(nextPart ?? '').replace(/\D/g, '').slice(0, 2)
   return parts.join(':')
 }
 
 export function normalizeTimePart(value) {
   const digits = String(value ?? '').replace(/\D/g, '')
-  return digits ? digits.padStart(2, '0') : ''
+  if (!digits) return ''
+  return String(Math.min(Number(digits), 59)).padStart(2, '0')
 }
 
 function validateTimeValue(value, label) {
   const parts = getTimeParts(value)
   if (parts.some((part) => !/^\d+$/.test(part))) return `${label}时间不完整，请填写时、分、秒`
-  if (!/^\d{2,3}$/.test(parts[0]) || !/^\d{2}$/.test(parts[1]) || !/^\d{2}$/.test(parts[2])) {
+  if (parts.some((part) => !/^\d{2}$/.test(part))) {
     return `${label}请使用两位数字，例如 01:05:09`
   }
+  if (Number(parts[0]) > 59) return `${label}小时必须在 00–59 之间`
   if (Number(parts[1]) > 59) return `${label}分钟必须在 00–59 之间`
   if (Number(parts[2]) > 59) return `${label}秒必须在 00–59 之间`
   return null

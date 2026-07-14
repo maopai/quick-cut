@@ -22,7 +22,10 @@ describe('time helpers', () => {
   it('normalizes individual hour, minute and second fields', () => {
     assert.equal(normalizeTimePart('1'), '01')
     assert.equal(normalizeTimePart('09'), '09')
+    assert.equal(normalizeTimePart('60'), '59')
+    assert.equal(normalizeTimePart('99'), '59')
     assert.equal(replaceTimePart('00:02:03', 1, '7'), '00:7:03')
+    assert.equal(replaceTimePart('00:02:03', 0, '123'), '12:02:03')
     assert.deepEqual(getTimeParts('01:02:03'), ['01', '02', '03'])
   })
 
@@ -31,6 +34,7 @@ describe('time helpers', () => {
     assert.match(validateSegment({ start: '00:00:03', end: '00:00:02' }, 10), /晚于/)
     assert.match(validateSegment({ start: '00:00:03', end: '00:00:12' }, 10), /超出/)
     assert.match(validateSegment({ start: '3', end: '12' }, 10), /不完整/)
+    assert.match(validateSegment({ start: '60:00:00', end: '00:00:12' }, 100), /小时必须/)
     assert.match(validateSegment({ start: '00:60:00', end: '00:00:12' }, 100), /分钟必须/)
     assert.match(validateSegment({ start: '00:00:01', end: '00:00:60' }, 100), /秒必须/)
     assert.equal(segmentDuration({ start: '1.25', end: '2.5' }), 1.25)

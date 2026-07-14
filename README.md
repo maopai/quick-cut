@@ -9,9 +9,9 @@
 
 请前往 [GitHub Releases](https://github.com/maopai/quick-cut/releases) 下载当前版本：
 
-- macOS Apple Silicon：`Quick-Cut-1.4.2-macOS-arm64.dmg` 或 `.zip`
-- macOS Intel：`Quick-Cut-1.4.2-macOS-x64.dmg` 或 `.zip`
-- Windows 64 位：`Quick-Cut-1.4.2-Windows-x64-Setup.exe` 为安装版，`Quick-Cut-1.4.2-Windows-x64-Portable.exe` 为免安装版
+- macOS Apple Silicon：`Quick-Cut-1.4.3-macOS-arm64.dmg` 或 `.zip`
+- macOS Intel：`Quick-Cut-1.4.3-macOS-x64.dmg` 或 `.zip`
+- Windows 64 位：`Quick-Cut-1.4.3-Windows-x64-Setup.exe` 为安装版，`Quick-Cut-1.4.3-Windows-x64-Portable.exe` 为免安装版
 
 当前版本未进行 Apple Developer ID 或 Windows 代码签名，首次运行时系统可能显示“开发者未验证”或 SmartScreen 提示。
 
@@ -21,7 +21,7 @@
 - 支持黑色与白色主题切换，应用内容和系统窗口标题栏保持一致，并记住上次选择
 - 通过文件选择器或拖放到窗口任意位置读取 MP4、MOV、MKV、AVI、WebM、M4V、MTS、M2TS 等常见视频文件
 - 剪辑前输入片段数量，之后仍可增减、删除和上下调整顺序
-- 时间采用“时 / 分 / 秒”三段式输入，单个数字自动补零；分钟和秒限制为 `00–59`
+- 时间采用“时 / 分 / 秒”三段式输入，每段固定两位；输入满两位后自动跳到下一段，超过 `59` 自动修正为 `59`
 - 每个片段独立完整显示起点帧和终点帧，不裁切画面，也不加载或播放完整视频；支持 SAR/DAR 非方形像素和旋转元数据
 - 预览帧默认最高为 1080p；高分辨率视频等比缩小到 1920×1080 边界内，低于该范围时保持源分辨率且不放大
 - 校验空值、时间格式、起止顺序以及是否超过源视频时长

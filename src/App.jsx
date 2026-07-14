@@ -126,13 +126,20 @@ function FramePreview({ image, label, loading, aspectRatio }) {
 function TimeCodeInput({ value, label, onChange, onCommit }) {
   const parts = getTimeParts(value)
   const units = ['小时', '分钟', '秒']
+  const inputRefs = useRef([])
 
   function updatePart(index, nextValue) {
-    onChange(replaceTimePart(value, index, nextValue))
+    const digits = String(nextValue ?? '').replace(/\D/g, '').slice(0, 2)
+    const nextPart = digits.length === 2 ? normalizeTimePart(digits) : digits
+    onChange(replaceTimePart(value, index, nextPart))
+
+    if (digits.length === 2 && index < units.length - 1) {
+      inputRefs.current[index + 1]?.focus()
+    }
   }
 
-  function commitPart(index) {
-    const normalized = replaceTimePart(value, index, normalizeTimePart(parts[index]))
+  function commitPart(index, currentPart = parts[index]) {
+    const normalized = replaceTimePart(value, index, normalizeTimePart(currentPart))
     onChange(normalized)
     onCommit(normalized)
   }
@@ -143,16 +150,17 @@ function TimeCodeInput({ value, label, onChange, onCommit }) {
         <div className="time-part-group" key={units[partIndex]}>
           {partIndex > 0 && <b>:</b>}
           <input
+            ref={(element) => { inputRefs.current[partIndex] = element }}
             className="time-part"
             value={part}
             inputMode="numeric"
             pattern="[0-9]*"
-            maxLength={partIndex === 0 ? 3 : 2}
+            maxLength={2}
             placeholder="00"
             aria-label={`${label}${units[partIndex]}`}
             onFocus={(event) => event.target.select()}
             onChange={(event) => updatePart(partIndex, event.target.value)}
-            onBlur={() => commitPart(partIndex)}
+            onBlur={(event) => commitPart(partIndex, event.target.value)}
           />
         </div>
       ))}
