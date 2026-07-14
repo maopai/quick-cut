@@ -5,6 +5,16 @@
 
 快速剪辑是一个完全本地运行的跨平台视频片段裁切与合并工具。选择一个源视频，通过独立的“时 / 分 / 秒”输入框设置任意数量的时间段，核对每段的起点帧和终点帧，再按列表顺序输出为一个新视频。
 
+## 下载
+
+请前往 [GitHub Releases](https://github.com/maopai/quick-cut/releases) 下载当前版本：
+
+- macOS Apple Silicon：文件名中带有 `arm64`
+- macOS Intel：不带 `arm64` 的 `.dmg` 或 `-mac.zip`
+- Windows 64 位：带有 `Setup` 的 `.exe` 为安装版，另一个 `.exe` 为免安装版
+
+当前版本未进行 Apple Developer ID 或 Windows 代码签名，首次运行时系统可能显示“开发者未验证”或 SmartScreen 提示。
+
 ## 已实现功能
 
 - Windows 与 macOS 桌面应用（Electron + React）
