@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('frameCut', {
   selectVideo: () => ipcRenderer.invoke('video:select'),
   getPathForFile: (file) => webUtils.getPathForFile(file),
   getMetadata: (filePath) => ipcRenderer.invoke('video:metadata', filePath),
+  getPreviewUrl: (filePath) => ipcRenderer.invoke('video:preview-url', filePath),
   getCapabilities: () => ipcRenderer.invoke('video:capabilities'),
   extractFrame: (filePath, seconds) => ipcRenderer.invoke('video:frame', { filePath, seconds }),
   getOutputDefaults: (sourcePath) => ipcRenderer.invoke('video:output-defaults', sourcePath),

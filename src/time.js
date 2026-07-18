@@ -12,11 +12,12 @@ export function parseTime(value) {
 
 export function formatTime(totalSeconds, milliseconds = false) {
   if (!Number.isFinite(totalSeconds)) return milliseconds ? '00:00:00.000' : '00:00:00'
-  const safe = Math.max(0, totalSeconds)
+  const totalMillis = Math.max(0, Math.round(totalSeconds * 1000))
+  const safe = Math.floor(totalMillis / 1000)
   const hours = Math.floor(safe / 3600)
   const minutes = Math.floor((safe % 3600) / 60)
-  const seconds = Math.floor(safe % 60)
-  const millis = Math.round((safe - Math.floor(safe)) * 1000)
+  const seconds = safe % 60
+  const millis = totalMillis % 1000
   const base = [hours, minutes, seconds].map((part) => String(part).padStart(2, '0')).join(':')
   return milliseconds ? `${base}.${String(millis).padStart(3, '0')}` : base
 }
@@ -51,10 +52,12 @@ function validateTimeValue(value, label) {
 }
 
 export function validateSegment(segment, duration) {
-  const startError = validateTimeValue(segment.start, '起点')
-  if (startError) return startError
-  const endError = validateTimeValue(segment.end, '终点')
-  if (endError) return endError
+  if (typeof segment.start !== 'number' || typeof segment.end !== 'number') {
+    const startError = validateTimeValue(segment.start, '起点')
+    if (startError) return startError
+    const endError = validateTimeValue(segment.end, '终点')
+    if (endError) return endError
+  }
   const start = parseTime(segment.start)
   const end = parseTime(segment.end)
   if (!Number.isFinite(start) || !Number.isFinite(end)) return '请输入有效时间，例如 00:01:25'

@@ -1,6 +1,6 @@
 {
   "name": "quick-cut",
-  "version": "1.4.3",
+  "version": "1.5.0",
   "private": true,
   "type": "module",
   "description": "快速剪辑：跨平台视频时间片段裁切与合并工具",

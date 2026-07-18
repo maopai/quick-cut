@@ -13,6 +13,7 @@ import {
   Gauge,
   Image as ImageIcon,
   LoaderCircle,
+  MousePointer2,
   Moon,
   MonitorUp,
   Plus,
@@ -225,6 +226,120 @@ function SegmentCard({ segment, index, count, duration, aspectRatio, onChange, o
   )
 }
 
+function ManualCutEditor({ metadata, mediaUrl, segments, onAdd, onRemove, onMove, notify }) {
+  const videoRef = useRef(null)
+  const [currentTime, setCurrentTime] = useState(0)
+  const [pendingStart, setPendingStart] = useState(null)
+  const [previewError, setPreviewError] = useState(false)
+  const duration = metadata?.duration || 0
+  const aspectRatio = metadata?.video.displayAspectRatio
+    || (metadata?.video.width && metadata?.video.height ? metadata.video.width / metadata.video.height : 16 / 9)
+  const safeAspectRatio = Number.isFinite(aspectRatio) && aspectRatio > 0
+    ? Math.min(4, Math.max(0.25, aspectRatio))
+    : 16 / 9
+
+  useEffect(() => {
+    setCurrentTime(0)
+    setPendingStart(null)
+    setPreviewError(false)
+  }, [mediaUrl])
+
+  function seekTo(value) {
+    const nextTime = Math.max(0, Math.min(duration, Number(value) || 0))
+    setCurrentTime(nextTime)
+    if (videoRef.current) videoRef.current.currentTime = nextTime
+  }
+
+  function markStart() {
+    const start = Math.round(currentTime * 1000) / 1000
+    if (start >= duration) return notify('开始点需要早于视频结尾', 'error')
+    setPendingStart(start)
+  }
+
+  function markEnd() {
+    if (!Number.isFinite(pendingStart)) return notify('请先拖动视频并标记开始点', 'error')
+    const end = Math.round(currentTime * 1000) / 1000
+    if (end <= pendingStart) return notify('结束点必须晚于开始点', 'error')
+    onAdd(pendingStart, end)
+    setPendingStart(null)
+  }
+
+  return (
+    <div className="manual-editor">
+      <div className="manual-video-wrap">
+        <div className="manual-video-stage" style={{ '--video-aspect-ratio': safeAspectRatio }}>
+          {mediaUrl && !previewError ? (
+            <video
+              ref={videoRef}
+              src={mediaUrl}
+              controls
+              preload="metadata"
+              onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)}
+              onSeeking={(event) => setCurrentTime(event.currentTarget.currentTime)}
+              onError={() => setPreviewError(true)}
+            />
+          ) : (
+            <div className="manual-video-error">
+              <Video size={28} />
+              <strong>{previewError ? '当前视频编码无法直接预览' : '正在准备视频预览'}</strong>
+              <span>{previewError ? '可更换为 Chromium 支持播放的 MP4 / WebM 视频后使用手动标记' : '请稍候…'}</span>
+            </div>
+          )}
+          <span className="preview-quality-badge">原视频清晰度 · 等比例</span>
+        </div>
+
+        <div className="manual-scrubber">
+          <div className="scrubber-times"><strong>{formatTime(currentTime, true)}</strong><span>{formatTime(duration, true)}</span></div>
+          <div className="marker-track" aria-hidden="true">
+            {segments.flatMap((segment) => [
+              <i key={`${segment.id}-start`} className="saved start" style={{ left: `${(segment.start / duration) * 100}%` }} />,
+              <i key={`${segment.id}-end`} className="saved end" style={{ left: `${(segment.end / duration) * 100}%` }} />,
+            ])}
+            {Number.isFinite(pendingStart) && <i className="pending" style={{ left: `${(pendingStart / duration) * 100}%` }} />}
+          </div>
+          <input
+            type="range"
+            min="0"
+            max={duration}
+            step={metadata?.video.fps > 0 ? Math.max(0.001, 1 / metadata.video.fps) : 0.01}
+            value={currentTime}
+            onChange={(event) => seekTo(event.target.value)}
+            aria-label="拖动视频预览位置"
+          />
+        </div>
+
+        <div className="mark-controls">
+          <div>
+            <button className="mark-start" onClick={markStart}><MousePointer2 size={16} />标记开始点</button>
+            <button className="mark-end" onClick={markEnd} disabled={!Number.isFinite(pendingStart)}><Scissors size={16} />标记结束点并添加</button>
+          </div>
+          <p>{Number.isFinite(pendingStart) ? <>已标记开始点 <strong>{formatTime(pendingStart, true)}</strong>，请拖到结束位置继续标记。</> : '拖动视频控制条或下方时间轴定位，然后依次标记开始点和结束点。'}</p>
+        </div>
+      </div>
+
+      <div className="manual-segments">
+        <div className="manual-list-heading"><span>已标记片段</span><strong>{segments.length} 段</strong></div>
+        {!segments.length ? (
+          <div className="manual-empty"><MousePointer2 size={20} /><span>还没有片段，可按任意顺序反复标记，数量不限。</span></div>
+        ) : segments.map((segment, index) => (
+          <article className="manual-segment" key={segment.id}>
+            <span className="manual-segment-number">{String(index + 1).padStart(2, '0')}</span>
+            <button onClick={() => seekTo(segment.start)} title="跳到开始点"><small>开始</small><strong>{formatTime(segment.start, true)}</strong></button>
+            <ChevronRight size={16} />
+            <button onClick={() => seekTo(segment.end)} title="跳到结束点"><small>结束</small><strong>{formatTime(segment.end, true)}</strong></button>
+            <span className="manual-duration">{formatTime(segment.end - segment.start, true)}</span>
+            <div className="segment-actions">
+              <button className="icon-button" onClick={() => onMove(index, -1)} disabled={index === 0} title="上移"><ArrowUp size={16} /></button>
+              <button className="icon-button" onClick={() => onMove(index, 1)} disabled={index === segments.length - 1} title="下移"><ArrowDown size={16} /></button>
+              <button className="icon-button danger" onClick={() => onRemove(index)} title="删除片段"><Trash2 size={16} /></button>
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function ProcessingSettings({ mode, onModeChange, acceleration, onAccelerationChange, metadata, capabilities, quality, onQualityChange }) {
   const [qualityOpen, setQualityOpen] = useState(false)
   const codec = metadata?.video.codec
@@ -248,6 +363,11 @@ function ProcessingSettings({ mode, onModeChange, acceleration, onAccelerationCh
           <span className="mode-icon fast"><Rocket size={22} /></span>
           <span><strong>极速剪辑</strong><small>直接复制原始码流，接近秒级完成</small></span>
           <i>{mode === 'fast' && <Check size={14} />}</i>
+        </button>
+        <button className={`mode-card ${mode === 'manual' ? 'selected' : ''}`} onClick={() => onModeChange('manual')}>
+          <span className="mode-icon manual"><MousePointer2 size={22} /></span>
+          <span><strong>手动标记</strong><small>拖动高清预览，任意标记多个片段</small></span>
+          <i>{mode === 'manual' && <Check size={14} />}</i>
         </button>
       </div>
 
@@ -305,7 +425,7 @@ function ProcessingSettings({ mode, onModeChange, acceleration, onAccelerationCh
           </div>
         </div>
       ) : (
-        <div className="fast-warning"><CircleAlert size={16} /><span><strong>极速模式以关键帧为切点</strong>实际起止位置可能比输入时间提前或延后数秒，但不会重新编码，画质和编码参数完全不变。</span></div>
+        <div className={`fast-warning ${mode === 'manual' ? 'manual' : ''}`}><CircleAlert size={16} /><span><strong>{mode === 'manual' ? '手动标记使用极速剪辑' : '极速模式以关键帧为切点'}</strong>{mode === 'manual' ? '可拖动原视频清晰预览并反复标记；导出直接复制码流，实际切点仍受关键帧位置影响。' : '实际起止位置可能比输入时间提前或延后数秒，但不会重新编码，画质和编码参数完全不变。'}</span></div>
       )}
     </section>
   )
@@ -336,6 +456,8 @@ export default function App({ initialTheme = 'dark' }) {
   const [theme, setTheme] = useState(initialTheme)
   const [metadata, setMetadata] = useState(demoMode ? demoMetadata : null)
   const [segments, setSegments] = useState(demoMode ? demoSegments : [blankSegment(), blankSegment(), blankSegment()])
+  const [manualSegments, setManualSegments] = useState([])
+  const [previewUrl, setPreviewUrl] = useState('')
   const [desiredCount, setDesiredCount] = useState(3)
   const [processingMode, setProcessingMode] = useState('accurate')
   const [acceleration, setAcceleration] = useState('auto')
@@ -349,9 +471,11 @@ export default function App({ initialTheme = 'dark' }) {
   const toastTimer = useRef(null)
   const dragDepth = useRef(0)
 
-  const totalDuration = useMemo(() => segments.reduce((sum, item) => sum + segmentDuration(item), 0), [segments])
-  const errors = useMemo(() => metadata ? segments.map((item) => validateSegment(item, metadata.duration)) : [], [segments, metadata])
-  const isReady = Boolean(metadata && output.directory && output.fileName.trim() && segments.length && errors.every((error) => !error))
+  const activeSegments = processingMode === 'manual' ? manualSegments : segments
+  const exportMode = processingMode === 'manual' ? 'fast' : processingMode
+  const totalDuration = useMemo(() => activeSegments.reduce((sum, item) => sum + segmentDuration(item), 0), [activeSegments])
+  const errors = useMemo(() => metadata ? activeSegments.map((item) => validateSegment(item, metadata.duration)) : [], [activeSegments, metadata])
+  const isReady = Boolean(metadata && output.directory && output.fileName.trim() && activeSegments.length && errors.every((error) => !error))
 
   useEffect(() => {
     const nextTheme = applyDocumentTheme(storeTheme(theme))
@@ -393,12 +517,15 @@ export default function App({ initialTheme = 'dark' }) {
     if (isLoadingFile) return notify('正在读取视频，请稍候', 'error')
     setIsLoadingFile(true)
     try {
-      const [info, outputDefaults] = await Promise.all([
+      const [info, outputDefaults, nextPreviewUrl] = await Promise.all([
         api.getMetadata(filePath),
         api.getOutputDefaults(filePath),
+        api.getPreviewUrl(filePath),
       ])
       setMetadata(info)
       setOutput(outputDefaults)
+      setPreviewUrl(nextPreviewUrl)
+      setManualSegments([])
       setAcceleration('auto')
       if (info.video.bitRate > 0) setQuality((current) => ({ ...current, customVideoBitrate: (info.video.bitRate / 1_000_000).toFixed(1) }))
       setSegments((current) => current.map((item, index) => ({
@@ -491,6 +618,24 @@ export default function App({ initialTheme = 'dark' }) {
     })
   }
 
+  function addManualSegment(start, end) {
+    setManualSegments((current) => [...current, { id: makeId(), start, end }])
+  }
+
+  function removeManualSegment(index) {
+    setManualSegments((current) => current.filter((_, itemIndex) => itemIndex !== index))
+  }
+
+  function moveManualSegment(index, direction) {
+    setManualSegments((current) => {
+      const target = index + direction
+      if (target < 0 || target >= current.length) return current
+      const next = [...current]
+      ;[next[index], next[target]] = [next[target], next[index]]
+      return next
+    })
+  }
+
   function changeSegment(index, field, value) {
     setSegments((current) => current.map((item, itemIndex) => itemIndex === index
       ? { ...item, [field]: value, [`${field}Frame`]: null }
@@ -521,8 +666,8 @@ export default function App({ initialTheme = 'dark' }) {
       const outputPath = await api.prepareOutput({ sourcePath: metadata.path, directory: output.directory, fileName: output.fileName })
       if (!outputPath) return
       setExportState({ running: true, progress: 0, status: 'preparing', engine: '' })
-      const normalized = segments.map((segment) => ({ start: parseTime(segment.start), end: parseTime(segment.end) }))
-      const result = await api.exportVideo({ sourcePath: metadata.path, outputPath, segments: normalized, metadata, mode: processingMode, acceleration, quality })
+      const normalized = activeSegments.map((segment) => ({ start: parseTime(segment.start), end: parseTime(segment.end) }))
+      const result = await api.exportVideo({ sourcePath: metadata.path, outputPath, segments: normalized, metadata, mode: exportMode, acceleration, quality })
       setExportState({ running: false, progress: 100, status: 'done', engine: result.engine })
       notify(`导出完成（${result.engine}）：${result.outputPath}`)
     } catch (error) {
@@ -641,45 +786,60 @@ export default function App({ initialTheme = 'dark' }) {
 
         <section className="editor-section">
           <div className="section-heading">
-            <div><span className="step-kicker">04 / SEGMENTS</span><h2>剪辑片段</h2><p>成片将严格按照下方片段的排列顺序合并。</p></div>
-            <div className="count-control">
+            <div><span className="step-kicker">04 / SEGMENTS</span><h2>{processingMode === 'manual' ? '拖动预览并标记' : '剪辑片段'}</h2><p>{processingMode === 'manual' ? '依次标记每段的开始点和结束点，想标几段都可以。' : '成片将严格按照下方片段的排列顺序合并。'}</p></div>
+            {processingMode !== 'manual' && <div className="count-control">
               <label>片段数量</label>
               <div><button onClick={() => setDesiredCount((count) => Math.max(1, count - 1))}>−</button><input type="number" min="1" max="100" value={desiredCount} onChange={(event) => setDesiredCount(event.target.value)} /><button onClick={() => setDesiredCount((count) => Math.min(100, Number(count) + 1))}>＋</button></div>
               <button className="apply-count" onClick={updateCount}>应用</button>
-            </div>
+            </div>}
           </div>
 
-          {!metadata && <div className="editor-lock"><Video size={21} /><span>请先选择源视频，再设置剪辑时间</span></div>}
+          {!metadata && <div className="editor-lock"><Video size={21} /><span>请先选择源视频，再设置剪辑片段</span></div>}
 
-          <div className={`segments-list ${!metadata ? 'disabled' : ''}`}>
-            {segments.map((segment, index) => (
-              <SegmentCard
-                key={segment.id}
-                segment={segment}
-                index={index}
-                count={segments.length}
-                duration={metadata?.duration}
-                aspectRatio={metadata?.video.displayAspectRatio || (metadata?.video.width && metadata?.video.height ? metadata.video.width / metadata.video.height : 16 / 9)}
-                onChange={changeSegment}
-                onRemove={removeSegment}
-                onMove={moveSegment}
-                onPreview={previewFrame}
-              />
-            ))}
-          </div>
-          <button className="add-segment" onClick={addSegment} disabled={!metadata}><Plus size={18} />添加一个片段</button>
+          {processingMode === 'manual' ? (
+            metadata && <ManualCutEditor
+              key={metadata.path}
+              metadata={metadata}
+              mediaUrl={previewUrl}
+              segments={manualSegments}
+              onAdd={addManualSegment}
+              onRemove={removeManualSegment}
+              onMove={moveManualSegment}
+              notify={notify}
+            />
+          ) : (
+            <>
+              <div className={`segments-list ${!metadata ? 'disabled' : ''}`}>
+                {segments.map((segment, index) => (
+                  <SegmentCard
+                    key={segment.id}
+                    segment={segment}
+                    index={index}
+                    count={segments.length}
+                    duration={metadata?.duration}
+                    aspectRatio={metadata?.video.displayAspectRatio || (metadata?.video.width && metadata?.video.height ? metadata.video.width / metadata.video.height : 16 / 9)}
+                    onChange={changeSegment}
+                    onRemove={removeSegment}
+                    onMove={moveSegment}
+                    onPreview={previewFrame}
+                  />
+                ))}
+              </div>
+              <button className="add-segment" onClick={addSegment} disabled={!metadata}><Plus size={18} />添加一个片段</button>
+            </>
+          )}
         </section>
       </main>
 
       <footer className="export-bar">
         <div className="export-summary">
           <div className="summary-icon"><Gauge size={21} /></div>
-          <div><small>预计成片</small><strong>{segments.length} 个片段 <i /> {formatTime(totalDuration)}</strong></div>
-          {metadata && <span className="preserve-note"><Check size={14} />{processingMode === 'fast' ? '码流原样复制' : qualityProfiles.find((item) => item.id === quality.profile)?.label} · {quality.resolution === 'source' ? `${metadata.video.width}×${metadata.video.height}` : quality.resolution} · {metadata.video.codec.toUpperCase()}</span>}
+          <div><small>预计成片</small><strong>{activeSegments.length} 个片段 <i /> {formatTime(totalDuration)}</strong></div>
+          {metadata && <span className="preserve-note"><Check size={14} />{exportMode === 'fast' ? `${processingMode === 'manual' ? '手动标记 · ' : ''}码流原样复制` : qualityProfiles.find((item) => item.id === quality.profile)?.label} · {quality.resolution === 'source' ? `${metadata.video.width}×${metadata.video.height}` : quality.resolution} · {metadata.video.codec.toUpperCase()}</span>}
         </div>
         {exportState.running ? (
           <div className="export-progress">
-            <div><span>{exportState.status === 'fallback' ? '硬件不可用，正在回退' : processingMode === 'fast' ? '正在复制与合并码流' : '正在编码与合并'}{exportState.engine ? ` · ${exportState.engine}` : ''}</span><strong>{Math.round(exportState.progress)}%</strong></div>
+            <div><span>{exportState.status === 'fallback' ? '硬件不可用，正在回退' : exportMode === 'fast' ? '正在复制与合并码流' : '正在编码与合并'}{exportState.engine ? ` · ${exportState.engine}` : ''}</span><strong>{Math.round(exportState.progress)}%</strong></div>
             <div className="progress-track"><span style={{ width: `${exportState.progress}%` }} /></div>
             <button onClick={cancelExport}>取消</button>
           </div>

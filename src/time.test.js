@@ -16,6 +16,7 @@ describe('time helpers', () => {
 
   it('formats time with millisecond precision', () => {
     assert.equal(formatTime(3723.5, true), '01:02:03.500')
+    assert.equal(formatTime(59.9996, true), '00:01:00.000')
     assert.equal(formatTime(62.1), '00:01:02')
   })
 
@@ -31,6 +32,7 @@ describe('time helpers', () => {
 
   it('validates segment bounds and duration', () => {
     assert.equal(validateSegment({ start: '00:00:01', end: '00:00:02' }, 10), null)
+    assert.equal(validateSegment({ start: 1.125, end: 2.75 }, 10), null)
     assert.match(validateSegment({ start: '00:00:03', end: '00:00:02' }, 10), /晚于/)
     assert.match(validateSegment({ start: '00:00:03', end: '00:00:12' }, 10), /超出/)
     assert.match(validateSegment({ start: '3', end: '12' }, 10), /不完整/)

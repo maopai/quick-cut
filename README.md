@@ -3,15 +3,15 @@
 [![CI](https://github.com/maopai/quick-cut/actions/workflows/ci.yml/badge.svg)](https://github.com/maopai/quick-cut/actions/workflows/ci.yml)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-快速剪辑是一个完全本地运行的跨平台视频片段裁切与合并工具。选择一个源视频，通过独立的“时 / 分 / 秒”输入框设置任意数量的时间段，核对每段的起点帧和终点帧，再按列表顺序输出为一个新视频。
+快速剪辑是一个完全本地运行的跨平台视频片段裁切与合并工具。选择一个源视频后，可以通过独立的“时 / 分 / 秒”输入框设置时间段，也可以拖动高清原视频预览，手动反复标记任意数量的开始点和结束点，再按列表顺序输出为一个新视频。
 
 ## 下载
 
 请前往 [GitHub Releases](https://github.com/maopai/quick-cut/releases) 下载当前版本：
 
-- macOS Apple Silicon：`Quick-Cut-1.4.3-macOS-arm64.dmg` 或 `.zip`
-- macOS Intel：`Quick-Cut-1.4.3-macOS-x64.dmg` 或 `.zip`
-- Windows 64 位：`Quick-Cut-1.4.3-Windows-x64-Setup.exe` 为安装版，`Quick-Cut-1.4.3-Windows-x64-Portable.exe` 为免安装版
+- macOS Apple Silicon：`Quick-Cut-1.5.0-macOS-arm64.dmg` 或 `.zip`
+- macOS Intel：`Quick-Cut-1.5.0-macOS-x64.dmg` 或 `.zip`
+- Windows 64 位：`Quick-Cut-1.5.0-Windows-x64-Setup.exe` 为安装版，`Quick-Cut-1.5.0-Windows-x64-Portable.exe` 为免安装版
 
 当前版本未进行 Apple Developer ID 或 Windows 代码签名，首次运行时系统可能显示“开发者未验证”或 SmartScreen 提示。
 
@@ -22,8 +22,10 @@
 - 通过文件选择器或拖放到窗口任意位置读取 MP4、MOV、MKV、AVI、WebM、M4V、MTS、M2TS 等常见视频文件
 - 剪辑前输入片段数量，之后仍可增减、删除和上下调整顺序
 - 时间采用“时 / 分 / 秒”三段式输入，每段固定两位；输入满两位后自动跳到下一段，超过 `59` 自动修正为 `59`
-- 每个片段独立完整显示起点帧和终点帧，不裁切画面，也不加载或播放完整视频；支持 SAR/DAR 非方形像素和旋转元数据
+- 时间输入模式为每个片段独立显示起点帧和终点帧，不裁切画面；支持 SAR/DAR 非方形像素和旋转元数据
 - 预览帧默认最高为 1080p；高分辨率视频等比缩小到 1920×1080 边界内，低于该范围时保持源分辨率且不放大
+- 手动标记模式直接播放本地源视频，保持原视频清晰度和显示宽高比；播放器控制条与独立时间轴均可拖动定位
+- 手动标记模式支持依次标记开始点和结束点并无限追加片段，可跳转检查、上下排序或删除已标记片段
 - 校验空值、时间格式、起止顺序以及是否超过源视频时长
 - 精准模式按列表顺序逐帧裁切，支持 Apple VideoToolbox、NVIDIA NVENC、AMD AMF、Intel Quick Sync 和 CPU 软件编码
 - 自动模式优先尝试当前系统支持的硬件编码器，硬件初始化失败时自动回退 CPU
@@ -31,6 +33,7 @@
 - 可选择保持源分辨率或最高 4K、1080p、720p，支持保持源帧率或输出 60、30、24 FPS
 - 音频码率支持跟随源文件以及 320、192、128、96 kbps
 - 极速模式直接复制原始码流，画质与编码参数完全不变，但切点会落在附近关键帧
+- 手动标记模式固定使用极速码流复制链路，不触发重新编码
 - 新文件默认命名为 `原文件名_new.原扩展名`，默认保存到源视频目录，也可修改文件名和保存位置
 - 显示实时处理进度，支持取消
 - FFmpeg 与 FFprobe 随应用打包，最终用户不需要单独安装

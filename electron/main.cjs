@@ -1,7 +1,9 @@
-const { app, BrowserWindow, dialog, ipcMain, nativeTheme, shell } = require('electron')
+const { app, BrowserWindow, dialog, ipcMain, nativeTheme, protocol, shell } = require('electron')
 const path = require('node:path')
 const fs = require('node:fs')
+const crypto = require('node:crypto')
 const { getMetadata, extractFrame, getEncoderCapabilities, exportVideo, cancelExport } = require('./ffmpeg.cjs')
+const { servePreviewVideo } = require('./preview.cjs')
 const {
   getThemePalette,
   getWindowChromeOptions,
@@ -12,6 +14,12 @@ const {
 
 let mainWindow
 let activeTheme = 'dark'
+const previewVideos = new Map()
+
+protocol.registerSchemesAsPrivileged([{
+  scheme: 'quickcut-video',
+  privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true },
+}])
 
 function getThemePreferencePath() {
   return path.join(app.getPath('userData'), 'theme.json')
@@ -72,6 +80,12 @@ function createWindow() {
 app.whenReady().then(() => {
   activeTheme = readThemePreference(getThemePreferencePath())
   applyTheme(activeTheme)
+  protocol.handle('quickcut-video', (request) => {
+    const token = new URL(request.url).pathname.slice(1)
+    const filePath = previewVideos.get(token)
+    if (!filePath || !fs.existsSync(filePath)) return new Response('Video not found', { status: 404 })
+    return servePreviewVideo(request, filePath)
+  })
   createWindow()
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
@@ -97,6 +111,15 @@ ipcMain.handle('video:select', async () => {
 ipcMain.handle('video:metadata', (_event, filePath) => getMetadata(filePath))
 ipcMain.handle('video:capabilities', () => getEncoderCapabilities())
 ipcMain.handle('video:frame', (_event, { filePath, seconds }) => extractFrame(filePath, seconds))
+ipcMain.handle('video:preview-url', (_event, filePath) => {
+  if (!filePath || !fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) {
+    throw new Error('预览视频文件不存在或已被移动')
+  }
+  previewVideos.clear()
+  const token = crypto.randomUUID()
+  previewVideos.set(token, filePath)
+  return `quickcut-video://media/${token}`
+})
 
 ipcMain.handle('video:output-defaults', (_event, sourcePath) => {
   const parsed = path.parse(sourcePath)
