@@ -57,7 +57,7 @@
     "globals": "^15.14.0",
     "png-to-ico": "^3.0.2",
     "vite": "^8.1.4",
-    "wait-on": "^8.0.1"
+    "wait-on": "^9.0.10"
   },
   "build": {
     "appId": "com.quickcut.desktop",
